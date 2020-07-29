@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System;
+using AutoMapper;
 
 namespace AnimalDatingApp.API.Controllers
 {
@@ -18,10 +19,13 @@ namespace AnimalDatingApp.API.Controllers
     {
         private readonly IAuthRepository _repo;
         private readonly IConfiguration _config;
-        public AuthController(IAuthRepository repo, IConfiguration config)
+
+        private readonly IMapper _mapper;
+        public AuthController(IAuthRepository repo, IConfiguration config, IMapper mapper)
         {
             _config = config;
             _repo = repo;
+            _mapper = mapper;
         }
 
         [HttpPost("register")]
@@ -38,23 +42,23 @@ namespace AnimalDatingApp.API.Controllers
             if (await _repo.UserExists(userForRegisterDto.Username))
                 return BadRequest("Username already exists");
 
-            var userToCreate = new User
-            {
-                Username = userForRegisterDto.Username
-            };
+            var userToCreate = _mapper.Map<User>(userForRegisterDto);
 
             var createdUser = await _repo.Register(userToCreate, userForRegisterDto.Password);
 
-            return StatusCode(201);
+            var userToReturn = _mapper.Map<UserForDetailedDto>(createdUser);
 
+            return CreatedAtRoute("GetUser", new { controller = "Users", 
+                id = createdUser.Id }, userToReturn);
         }
 
         [HttpPost("login")]
 
         public async Task<IActionResult> Login(UserForLoginDto userForLoginDto)
         {
+            //throw new Exception("hello");
             var userFromRepo = await _repo.Login(userForLoginDto.Username, userForLoginDto.Password);
-
+ 
             if (userFromRepo == null)
                 return Unauthorized();
 
@@ -66,27 +70,36 @@ namespace AnimalDatingApp.API.Controllers
                 };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8
-            .GetBytes(_config.GetSection("AppSettings:Token").Value));
+                .GetBytes(_config.GetSection("AppSettings:Token").Value));
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
+            var tokenDescriptor = new SecurityTokenDescriptor {
                 Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.Now.AddDays(1),
                 SigningCredentials = creds
             };
 
-            var tokenHandler = new JwtSecurityTokenHandler();
+            var TokenHandler = new JwtSecurityTokenHandler();
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var token = TokenHandler.CreateToken(tokenDescriptor);
 
-            return Ok(new{
-                token = tokenHandler.WriteToken(token)
+            var user = _mapper.Map<UserForListDto>(userFromRepo);
+
+
+            // var token = new JwtSecurityToken(
+            //     issuer: "localhost",
+            //     audience: "localhost",
+            //     claims: claims,
+            //     expires: DateTime.Now.AddDays(1),
+            //     signingCredentials: creds
+            // );
+
+            return Ok(new
+            {
+                token = TokenHandler.WriteToken(token),
+                user
             });
-            
-        }
-
-
+           }
     }
 }

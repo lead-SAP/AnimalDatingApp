@@ -19,7 +19,7 @@ describe('AppComponent', () => {
   it(`should have as title 'AnimalDatingApp-SPA'`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('AnimalDatingApp-SPA');
+    expect(app.title).toEqual('AnimalDatingApp-SPA'); // error happened after moving members-list to members folder in video 86
   });
 
   it('should render title', () => {
