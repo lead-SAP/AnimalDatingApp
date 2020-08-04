@@ -10,6 +10,7 @@ import { MemberListResolver } from './_resolvers/member-list.resolver';
 import { MemberEditComponent } from './members/member-edit/member-edit.component';
 import { MemberEditResolver } from './_resolvers/member-edit.resolver';
 import { PreventUnsavedChanges } from './_guards/prevent-unsaved-changes.guard';
+import { ListsResolver } from './_resolvers/lists.resolver';
 
 export const appRoutes: Routes = [
     { path: '', component: HomeComponent}, // if you remove the home in 'home' it won't show in the Url
@@ -23,7 +24,7 @@ export const appRoutes: Routes = [
             { path: 'member/edit', component: MemberEditComponent,
                 resolve: {user: MemberEditResolver}, canDeactivate: [PreventUnsavedChanges]},
             { path: 'messages', component: MessagesComponent},
-            { path: 'lists', component: ListsComponent}
+            { path: 'lists', component: ListsComponent, resolve: {users: ListsResolver}},
         ]
     },
     { path: '**', redirectTo: '', pathMatch: 'full'} // ordering of this wildcard is important // this redirects to path in line 9
